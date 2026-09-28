@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Monitor Status Website Pemerintahan Kabupaten Lamongan</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="top-strip">
+        <span>Pemerintah Kabupaten Lamongan</span>
+        <span>lamongankab.go.id</span>
+    </div>
+    
+    <div class="header">
+        <img src="logo-pemkab-lamongan-116x166.png" alt="" class="logo" onerror="this.style.display='none'">
+        <div class="header-title">Monitor Status Website Pemerintahan Kabupaten Lamongan</div>
+    </div>
+    
+    <div class="container">
+        <div class="col-left">
+            <div class="section">
+                <div class="section-header">
+                    <span>Status Website Instansi Kabupaten Lamongan</span>
+                    <span id="counter">0/10</span>
+                </div>
+                <div class="section-body">
+                    <div class="controls">
+                        <div id="lastUpdate" style="font-size: 12px; color: #888; margin-bottom: 8px;">Memuat...</div>
+                        <div class="controls-row1">
+                            <input type="text" placeholder="Domain utama (lamongankab.go.id) atau subdomain spesifik" id="domainSearch" style="flex: 1; height: 36px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+                            <button class="scan-btn" onclick="scanSubdomains()" style="height: 36px; padding: 0 16px; background-color: #1A4480; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">Scan Subdomain</button>
+                            <button class="refresh-btn" onclick="window.location.reload()" style="height: 36px; padding: 0 16px; background-color: #1A4480; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;">Refresh</button>
+                        </div>
+                        <div style="font-size: 11px; color: #999; margin-top: 4px;">
+                          Contoh subdomain spesifik: puskesmas-pucuk.lamongankab.go.id
+                        </div>
+                        <div class="filter-row">
+                            <span class="filter-label">Filter:</span>
+                            <div class="filter-chips">
+                                <button class="chip active" onclick="setFilter('all', this)">Semua</button>
+                                <button class="chip" onclick="setFilter('new', this)">Baru</button>
+                                <button class="chip" onclick="setFilter('exists', this)">Sudah ada</button>
+                                <button class="chip" onclick="setFilter('dinas', this)">Dinas</button>
+                                <button class="chip" onclick="setFilter('rsud', this)">RSUD</button>
+                                <button class="chip" onclick="setFilter('badan', this)">Badan</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="scanSummary" style="display:none;"></div>
+                    <div id="resultArea" style="display:none;"></div>
+                    <div class="grid" id="websiteGrid"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-right">
+            <div class="section">
+                <div class="section-header red">
+                    <span>Sedang Tidak Aktif</span>
+                </div>
+                <div class="section-body" id="downList">
+                    <div class="empty-state">Memeriksa...</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>Aktif dan Online</span>
+                </div>
+                <div class="section-body" id="upList">
+                    <div class="empty-state">Memeriksa...</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <span>Terakhir Diperbarui</span>
+                </div>
+                <div class="section-body" id="updateLog">
+                    <div class="empty-state">Belum ada data</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-wave"></div>
+    <footer class="footer-main">
+        <div class="footer-col">
+            <div class="footer-logo">
+                <img src="logo-pemkab-lamongan-116x166.png" alt="" onerror="this.style.display='none'">
+                <div class="footer-logo-text">
+                    <div>PEMERINTAH KABUPATEN LAMONGAN</div>
+                    <div>DINAS KOMUNIKASI DAN INFORMATIKA KABUPATEN LAMONGAN</div>
+                </div>
+            </div>
+            <div class="footer-accent"></div>
+            <div class="footer-address-label">ALAMAT</div>
+            <div class="footer-address">📍 Jl. Basuki Rahmat No. 2, Lamongan, Jawa Timur</div>
+            <div class="footer-contact-label">TELEPON</div>
+            <div class="footer-phone">📞 (0322) 321016</div>
+            <div class="footer-whatsapp-label">WHATSAPP</div>
+            <div class="footer-whatsapp">💬 +628113021700</div>
+            <div class="footer-email-label">EMAIL</div>
+            <div class="footer-email">✉️ info@lamongankab.go.id</div>
+        </div>
+
+        <div class="footer-col">
+            <h4>INSTANSI TERKAIT</h4>
+            <div class="footer-links">
+                <a href="https://diskominfo.lamongankab.go.id" target="_blank" rel="noopener noreferrer">> Diskominfo Lamongan</a>
+                <a href="https://lamongankab.go.id" target="_blank" rel="noopener noreferrer">> Pemerintah Kabupaten Lamongan</a>
+                <a href="https://bssn.go.id" target="_blank" rel="noopener noreferrer">> BSSN (Badan Siber dan Sandi Negara)</a>
+            </div>
+        </div>
+
+        <div class="footer-col">
+            <h4>IKUTI KAMI</h4>
+            <div class="social-links">
+                <a href="https://www.tiktok.com/@pemkablamongan" target="_blank" rel="noopener noreferrer" class="social-btn tiktok-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.28 8.28 0 0 0 4.84 1.55V6.79a4.85 4.85 0 0 1-1.07-.1z"/>
+                    </svg>
+                </a>
+                <a href="https://www.instagram.com/pemkablamongan" target="_blank" rel="noopener noreferrer" class="social-btn instagram-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </a>
+                <a href="https://www.youtube.com/@pemkablamongan" target="_blank" rel="noopener noreferrer" class="social-btn youtube-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+                        <path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-col">
+            <h4>LAPORI</h4>
+            <a href="https://lapor.go.id" target="_blank" rel="noopener noreferrer" class="footer-box box-lapor">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="https://lapor.go.id/images/logo-lapor.png" alt="LAPOR" style="height:28px; object-fit:contain;" onerror="this.style.display='none'">
+                    <div>
+                        <div style="font-size:12px; font-weight:bold;">SP4N-LAPOR!</div>
+                        <div style="font-size:11px;">lapor.go.id</div>
+                    </div>
+                </div>
+            </a>
+            <a href="https://wa.me/628113021700" target="_blank" rel="noopener noreferrer" class="footer-box box-wa">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                    </svg>
+                    <div>
+                        <div style="font-size:12px; font-weight:bold;">LAPOR PAK YES!</div>
+                        <div style="font-size:11px;">WhatsApp: 08113021700</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </footer>
+
+    <div class="footer-bottom">
+        <div>Pemerintah Kabupaten Lamongan</div>
+        <div>© 2025 Monitor Status Website</div>
+    </div>
+
+    <script>
+        const websites = [
+            { name: "Pemerintah Kabupaten Lamongan", domain: "lamongankab.go.id" },
+            { name: "DPRD Kabupaten Lamongan", domain: "dprd.lamongankab.go.id" },
+            { name: "Dinas Kominfo", domain: "diskominfo.lamongankab.go.id" },
+            { name: "Dinas Pendidikan", domain: "disdik.lamongankab.go.id" },
+            { name: "Dinas Kesehatan", domain: "dinkes.lamongankab.go.id" },
+            { name: "Bappeda Lamongan", domain: "bappeda.lamongankab.go.id" },
+            { name: "RSUD Dr. Soegiri", domain: "rsud-soegiri.lamongankab.go.id" },
+            { name: "Dinas Kependudukan dan Catatan Sipil", domain: "dispendukcapil.lamongankab.go.id" },
+            { name: "BPBD Lamongan", domain: "bpbd.lamongankab.go.id" },
+            { name: "Dinas Pertanian", domain: "distan.lamongankab.go.id" }
+        ];
+
+        let results = {};
+        let checkedCount = 0;
+        let subfinderResults = [];
+        let searchTerm = '';
+        let activeFilter = 'all';
+        let addedSet = new Set(websites.map(w => w.domain));
+        let lastScanDuration = 0;
+        let hasScanned = false;
+
+        function render() {
+            const grid = document.getElementById('websiteGrid');
+            grid.innerHTML = websites.map((site, idx) => {
+                const result = results[site.domain];
+                let dotClass = 'dot-yellow';
+                let statusText = 'Sedang memeriksa...';
+
+                if (result) {
+                    if (result.status === 'UP') {
+                        dotClass = 'dot-green';
+                        statusText = `Server aktif (${result.response_time} ms) • ${result.time}`;
+                    } else {
+                        dotClass = 'dot-red';
+                        statusText = 'Server tidak dapat diakses';
+                    }
+                }
+
+                return `
+                    <div class="website-item">
+                        <a href="https://${site.domain}" target="_blank" rel="noopener noreferrer" class="website-name">
+                            <span class="dot ${dotClass}"></span>
+                            <span>${site.name}</span>
+                        </a>
+                        <div class="website-domain">${site.domain}</div>
+                        <div class="website-status">${statusText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSidebar() {
+            const upSites = websites.filter(s => results[s.domain]?.status === 'UP');
+            const downSites = websites.filter(s => results[s.domain]?.status === 'DOWN');
+
+            const upList = document.getElementById('upList');
+            const downList = document.getElementById('downList');
+            const updateLog = document.getElementById('updateLog');
+
+            if (downSites.length === 0) {
+                downList.innerHTML = '<div class="empty-state">Semua website dapat diakses</div>';
+            } else {
+                downList.innerHTML = downSites.map(s => `
+                    <div class="list-item">
+                        <a href="https://${s.domain}" target="_blank" rel="noopener noreferrer">${s.name}</a>
+                        <span class="badge badge-down">DOWN</span>
+                        <div class="website-domain">${s.domain}</div>
+                    </div>
+                `).join('');
+            }
+
+            if (upSites.length === 0 && checkedCount < websites.length) {
+                upList.innerHTML = '<div class="empty-state">Sedang memeriksa...</div>';
+            } else if (upSites.length === 0) {
+                upList.innerHTML = '<div class="empty-state">Tidak ada website yang aktif</div>';
+            } else {
+                upList.innerHTML = upSites.map(s => `
+                    <div class="list-item">
+                        <a href="https://${s.domain}" target="_blank" rel="noopener noreferrer">${s.name}</a>
+                        <span class="badge badge-up">UP</span>
+                        <div style="font-size: 11px; color: #888; margin-top: 4px;">${results[s.domain].response_time} ms</div>
+                    </div>
+                `).join('');
+            }
+
+            const allChecked = websites.filter(s => results[s.domain]);
+            if (allChecked.length === 0) {
+                updateLog.innerHTML = '<div class="empty-state">Belum ada data</div>';
+            } else {
+                updateLog.innerHTML = allChecked.slice(-8).reverse().map(s => `
+                    <div class="list-item">
+                        <a href="https://${s.domain}" target="_blank" rel="noopener noreferrer">${s.name}</a>
+                        <div style="font-size: 11px; color: #888; margin-top: 2px;">${results[s.domain].time}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getRelativeTime() {
+            return 'Baru saja';
+        }
+
+        async function checkWebsite(site) {
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: `https://${site.domain}` })
+                });
+                const data = await response.json();
+                results[site.domain] = {
+                    status: data.status,
+                    response_time: data.response_time || 0,
+                    time: getRelativeTime()
+                };
+            } catch (err) {
+                results[site.domain] = {
+                    status: 'DOWN',
+                    response_time: 0,
+                    time: getRelativeTime()
+                };
+            }
+            checkedCount++;
+            document.getElementById('counter').textContent = `${checkedCount}/${websites.length}`;
+            render();
+            updateSidebar();
+        }
+
+        async function checkAll() {
+            results = {};
+            checkedCount = 0;
+            document.getElementById('counter').textContent = `0/${websites.length}`;
+            document.getElementById('lastUpdate').textContent = 'Memeriksa...';
+            render();
+            
+            await Promise.all(websites.map(site => checkWebsite(site)));
+            
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = `Terakhir diperbarui: ${now.toLocaleTimeString('id-ID')}`;
+        }
+
+        async function scanSubdomains() {
+            const btn = document.querySelector('.scan-btn');
+            const searchInput = document.getElementById('domainSearch');
+            
+            const domain = searchInput.value.trim() || 'lamongankab.go.id';
+            
+            searchInput.value = '';
+            subfinderResults = [];
+            searchTerm = '';
+            searchInput.placeholder = 'Scanning...';
+            
+            btn.textContent = "Scanning...";
+            btn.disabled = true;
+
+            const resultArea = document.getElementById('resultArea');
+            resultArea.style.display = 'block';
+            resultArea.innerHTML = '<div class="loading">Scanning... (estimasi 15-20 detik)</div>';
+
+            const startTime = Date.now();
+
+            try {
+                const response = await fetch('/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: domain })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok && !data) {
+                    throw new Error('Gagal menghubungi backend');
+                }
+                
+                if (data && Array.isArray(data.subdomains)) {
+                    subfinderResults = data.subdomains;
+                } else {
+                    resultArea.innerHTML = '<div class="loading">Format response tidak sesuai</div>';
+                    return;
+                }
+                
+                lastScanDuration = Math.round((Date.now() - startTime) / 1000);
+                hasScanned = true;
+                
+                renderSubdomainResults();
+            } catch (err) {
+                resultArea.innerHTML = '<div class="loading">Gagal menghubungi backend: ' + err.message + '</div>';
+            } finally {
+                btn.textContent = "Scan Subdomain";
+                btn.disabled = false;
+                searchInput.placeholder = 'Ketik untuk filter hasil...';
+            }
+        }
+
+        function exportCSV() {
+            let filtered = subfinderResults.filter(domain => 
+                domain.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (activeFilter === 'new') {
+                filtered = filtered.filter(domain => !addedSet.has(domain));
+            } else if (activeFilter === 'exists') {
+                filtered = filtered.filter(domain => addedSet.has(domain));
+            } else if (activeFilter === 'dinas') {
+                filtered = filtered.filter(domain => domain.includes('dis') || domain.includes('din'));
+            } else if (activeFilter === 'rsud') {
+                filtered = filtered.filter(domain => domain.includes('rsud'));
+            } else if (activeFilter === 'badan') {
+                filtered = filtered.filter(domain => domain.split('.')[0].startsWith('b'));
+            }
+
+            let csvContent = "\uFEFFNo,Domain,Status,Response Time,Waktu Scan\n";
+            filtered.forEach((domain, index) => {
+                const statusEl = document.getElementById(`sub-status-${index}`);
+                let status = "Memeriksa";
+                let ping = "-";
+                
+                if (statusEl) {
+                    const text = statusEl.textContent;
+                    if (text.includes("aktif")) {
+                        status = "UP";
+                        const match = text.match(/(\d+)\s*ms/);
+                        if (match) ping = match[1] + " ms";
+                    } else if (text.includes("tidak")) {
+                        status = "DOWN";
+                    }
+                }
+                csvContent += `${index + 1},${domain},${status},${ping},${new Date().toLocaleString()}\n`;
+            });
+            csvContent += `\nDiekspor pada: ${new Date().toLocaleString()}\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const now = new Date();
+            const dateStr = now.toISOString().slice(0, 10);
+            const timeStr = now.getHours() + "-" + now.getMinutes();
+            link.setAttribute("href", url);
+            link.setAttribute("download", `subdomain-lamongankab-${dateStr}-${timeStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        function renderSubdomainResults() {
+            console.log("Render dipanggil, data:", subfinderResults.length);
+            const resultArea = document.getElementById('resultArea');
+            resultArea.style.display = 'block';
+            
+            if (subfinderResults === null || subfinderResults === undefined) {
+                resultArea.innerHTML = '';
+                return;
+            }
+
+            let filtered = subfinderResults.filter(domain => 
+                domain.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (activeFilter === 'new') {
+                filtered = filtered.filter(domain => !addedSet.has(domain));
+            } else if (activeFilter === 'exists') {
+                filtered = filtered.filter(domain => addedSet.has(domain));
+            } else if (activeFilter === 'dinas') {
+                filtered = filtered.filter(domain => domain.includes('dis') || domain.includes('din'));
+            } else if (activeFilter === 'rsud') {
+                filtered = filtered.filter(domain => domain.includes('rsud'));
+            } else if (activeFilter === 'badan') {
+                filtered = filtered.filter(domain => domain.split('.')[0].startsWith('b'));
+            }
+
+            const newSubdomains = filtered.filter(domain => !addedSet.has(domain));
+
+            let html = '<div class="result-header">';
+            html += `<span>${filtered.length} subdomain ditemukan`;
+            if (newSubdomains.length > 0) {
+                html += ` • ${newSubdomains.length} baru`;
+            }
+            if (lastScanDuration > 0) {
+                html += ` · selesai dalam ${lastScanDuration} detik`;
+            }
+            html += '</span>';
+            html += '<div style="display: flex; gap: 8px;">';
+            html += '<button class="close-btn" onclick="closeSubfinderResults()" style="background: transparent; border: none; color: #888; font-size: 13px; cursor: pointer;">✕ Tutup</button>';
+            html += '</div>';
+            html += '</div>';
+
+            if (filtered.length === 0) {
+                html += '<div class="no-result">Tidak ada subdomain yang cocok</div>';
+            } else {
+                filtered.forEach((domain, index) => {
+                    html += `
+                        <div class="subdomain-item" style="padding: 12px; border-bottom: 1px solid #F0F0F0; display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <a href="https://${domain}" target="_blank" rel="noopener noreferrer" style="font-weight: 600; color: #1A4480; font-size: 13px; margin-bottom: 4px; text-decoration: none; display: block;">${domain}</a>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span id="sub-dot-${index}" class="dot dot-yellow blink" style="width: 8px; height: 8px;"></span>
+                                    <span id="sub-status-${index}" style="font-size: 12px; color: #888;">Memeriksa...</span>
+                                </div>
+                            </div>
+                            <button class="view-btn" onclick="bukaStatistik('${domain}')">Lihat</button>
+                        </div>
+                    `;
+                });
+            }
+
+            resultArea.innerHTML = html;
+            const items = resultArea.querySelectorAll('.subdomain-item');
+            if (items.length > 0) items[items.length - 1].style.borderBottom = 'none';
+            
+            if (filtered.length > 0) {
+                checkSubdomainStatus(filtered);
+            }
+        }
+
+   function setFilter(filter, element) {
+     activeFilter = filter;
+     document.querySelectorAll('.chip').forEach(chip => {
+       chip.classList.remove('active');
+     });
+     element.classList.add('active');
+     if (subfinderResults.length > 0) {
+       renderSubdomainResults();
+     }
+   }
+
+        function closeSubfinderResults() {
+            subfinderResults = [];
+            lastScanDuration = 0;
+            hasScanned = false;
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('scanSummary').style.display = 'none';
+            const searchInput = document.getElementById('domainSearch');
+            searchInput.value = '';
+            searchInput.placeholder = 'Domain utama (lamongankab.go.id) atau subdomain spesifik';
+            searchTerm = '';
+            activeFilter = 'all';
+            document.querySelectorAll('.chip').forEach((chip, idx) => {
+                if (idx === 0) chip.classList.add('active');
+                else chip.classList.remove('active');
+            });
+        }
+
+        async function checkSubdomainStatus(subdomains) {
+            const statusMap = new Map();
+            
+            const checkPromises = subdomains.map(async (domain, index) => {
+                try {
+                    const response = await fetch('/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: `https://${domain}` })
+                    });
+                    
+                    const data = await response.json();
+                    statusMap.set(index, {
+                        status: data.status,
+                        response_time: data.response_time || 0,
+                        hasResult: true
+                    });
+                } catch (err) {
+                    statusMap.set(index, {
+                        status: 'DOWN',
+                        response_time: 0,
+                        hasResult: true
+                    });
+                }
+            });
+            
+            await Promise.all(checkPromises);
+            
+            // Calculate Statistics
+            let total = subdomains.length;
+            let up = 0;
+            let down = 0;
+            let totalResponseTime = 0;
+            let upCountForAvg = 0;
+
+            subdomains.forEach((_, index) => {
+                const s = statusMap.get(index);
+                if (s.status === 'UP') {
+                    up++;
+                    totalResponseTime += s.response_time;
+                    upCountForAvg++;
+                } else {
+                    down++;
+                }
+            });
+
+            const avgPing = upCountForAvg > 0 ? Math.round(totalResponseTime / upCountForAvg) + ' ms' : '-';
+
+            const summaryDiv = document.getElementById('scanSummary');
+            summaryDiv.style.display = 'flex';
+            summaryDiv.style.gap = '12px';
+            summaryDiv.style.marginBottom = '12px';
+            summaryDiv.innerHTML = `
+                <div style="flex:1; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #E0E0E0;">
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase;">Total</div>
+                    <div style="font-size: 22px; font-weight: 700; margin-top: 4px; color: #1A4480;">${total}</div>
+                </div>
+                <div style="flex:1; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #E0E0E0;">
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase;">UP</div>
+                    <div style="font-size: 22px; font-weight: 700; margin-top: 4px; color: #2E7D32;">${up}</div>
+                </div>
+                <div style="flex:1; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #E0E0E0;">
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase;">DOWN</div>
+                    <div style="font-size: 22px; font-weight: 700; margin-top: 4px; color: #C62828;">${down}</div>
+                </div>
+                <div style="flex:1; padding: 12px; border-radius: 4px; text-align: center; border: 1px solid #E0E0E0;">
+                    <div style="font-size: 11px; color: #888; text-transform: uppercase;">Avg Ping</div>
+                    <div style="font-size: 22px; font-weight: 700; margin-top: 4px; color: #D4AF37;">${avgPing}</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                subdomains.forEach((domain, index) => {
+                    const status = statusMap.get(index);
+                    if (status) {
+                        updateSubdomainStatus(index, status.status, status.response_time);
+                    }
+                });
+            }, 1);
+        }
+
+        function updateSubdomainStatus(index, status, response_time) {
+            const dot = document.getElementById(`sub-dot-${index}`);
+            const statusText = document.getElementById(`sub-status-${index}`);
+            
+            if (dot && statusText) {
+                dot.className = 'dot';
+                dot.classList.remove('blink', 'dot-yellow');
+                
+                if (status === 'UP') {
+                    dot.classList.add('dot-green');
+                    statusText.textContent = `Server aktif (${response_time} ms)`;
+                    statusText.style.color = '#555';
+                } else {
+                    dot.classList.add('dot-red');
+                    statusText.textContent = 'Server tidak dapat diakses';
+                    statusText.style.color = '#555';
+                }
+            }
+        }
+
+        async function loadModalCharts(domain) {
+            const historyBody = document.getElementById('modalHistoryBody');
+            
+            try {
+                const [histRes, uptimeRes] = await Promise.all([
+                    fetch('/history?domain=' + domain),
+                    fetch('/uptime?domain=' + domain)
+                ]);
+                const history = await histRes.json();
+                const uptime = await uptimeRes.json();
+
+                // Destroy old charts
+                Chart.getChart('modalResponseChart')?.destroy();
+                Chart.getChart('modalUptimeChart')?.destroy();
+
+                if (!history.length && !uptime.length) {
+                    historyBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px;">Belum ada data riwayat. Data akan muncul setelah beberapa menit monitoring berjalan.</td></tr>';
+                    return;
+                }
+
+                // Table
+                const last10 = [...history].reverse().slice(0, 10);
+                historyBody.innerHTML = last10.map(item => `
+                    <tr style="background-color:${item.status === 'UP' ? '#f0fff0' : '#fff0f0'}">
+                        <td style="padding:8px; border:1px solid #E0E0E0;">${new Date(item.checked_at).toLocaleString()}</td>
+                        <td style="padding:8px; border:1px solid #E0E0E0;">${item.status}</td>
+                        <td style="padding:8px; border:1px solid #E0E0E0;">${item.response_time || '-'} ms</td>
+                    </tr>
+                `).join('');
+
+                // Response Chart
+                new Chart(document.getElementById('modalResponseChart'), {
+                    type: 'line',
+                    data: {
+                        labels: history.map(h => {
+                            const d = new Date(h.checked_at);
+                            return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+                        }),
+                        datasets: [{
+                            label: 'ms',
+                            data: history.map(h => h.response_time || 0),
+                            borderColor: '#1A4480',
+                            backgroundColor: 'rgba(26, 68, 128, 0.1)',
+                            fill: true
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+
+                // Uptime Chart
+                new Chart(document.getElementById('modalUptimeChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: uptime.map(u => u.date),
+                        datasets: [{
+                            label: '%',
+                            data: uptime.map(u => u.uptime_percent),
+                            backgroundColor: uptime.map(u => u.uptime_percent > 80 ? '#2E7D32' : (u.uptime_percent >= 50 ? '#D4AF37' : '#C62828'))
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+
+            } catch(e) {
+                historyBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px;">Gagal memuat data grafik.</td></tr>';
+            }
+        }
+
+        function tutupStatistik() {
+            document.getElementById('statsOverlay').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        async function bukaStatistik(domain) {
+            const overlay = document.getElementById('statsOverlay');
+            const body = document.getElementById('statsPanelBody');
+            const domainLabel = document.getElementById('statsDomain');
+            
+            domainLabel.textContent = domain;
+            body.innerHTML = '<div class="empty-state">Memeriksa status...</div>';
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            try {
+                const res = await fetch('/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: 'https://' + domain })
+                });
+                const data = await res.json();
+                
+                const isUp = data.status === 'UP';
+                const pingText = isUp ? data.response_time + ' ms' : '-';
+                const statusColor = isUp ? '#2E7D32' : '#C62828';
+                const statusText = isUp ? 'Server Aktif' : 'Tidak Dapat Diakses';
+                
+                body.innerHTML = `
+                    <div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:120px; padding:15px; border:1px solid #E0E0E0; border-radius:4px; text-align:center;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase;">Status</div>
+                            <div style="font-size:18px; font-weight:700; margin-top:6px; color:${statusColor};">${statusText}</div>
+                        </div>
+                        <div style="flex:1; min-width:120px; padding:15px; border:1px solid #E0E0E0; border-radius:4px; text-align:center;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase;">Response Time</div>
+                            <div style="font-size:18px; font-weight:700; margin-top:6px; color:#D4AF37;">${pingText}</div>
+                        </div>
+                        <div style="flex:1; min-width:120px; padding:15px; border:1px solid #E0E0E0; border-radius:4px; text-align:center;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase;">HTTP Status</div>
+                            <div style="font-size:18px; font-weight:700; margin-top:6px; color:#1A4480;">${data.status_code || '-'}</div>
+                        </div>
+                        <div style="flex:1; min-width:120px; padding:15px; border:1px solid #E0E0E0; border-radius:4px; text-align:center;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase;">SSL</div>
+                            <div id="sslStatus" style="font-size:18px; font-weight:700; margin-top:6px; color:#888;">Memeriksa...</div>
+                        </div>
+                    </div>
+                    <div style="padding:15px; background:#F5F5F5; border-radius:4px; margin-bottom:20px;">
+                        <div style="font-size:12px; color:#888; margin-bottom:8px;">URL Lengkap</div>
+                        <a href="https://${domain}" target="_blank" rel="noopener noreferrer" style="color:#1A4480; font-size:14px; text-decoration:none; font-weight:500;">https://${domain} ↗</a>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div class="charts-container" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                            <div class="chart-box" style="border:1px solid #E0E0E0; padding:10px; border-radius:4px;">
+                                <div style="font-size:12px; font-weight:bold; color:#1A4480; margin-bottom:10px;">Response Time (24 Jam Terakhir)</div>
+                                <canvas id="modalResponseChart"></canvas>
+                            </div>
+                            <div class="chart-box" style="border:1px solid #E0E0E0; padding:10px; border-radius:4px;">
+                                <div style="font-size:12px; font-weight:bold; color:#1A4480; margin-bottom:10px;">Uptime % (7 Hari Terakhir)</div>
+                                <canvas id="modalUptimeChart"></canvas>
+                            </div>
+                        </div>
+                        <div style="font-size:12px; font-weight:bold; color:#1A4480; margin-bottom:10px;">Riwayat 10 Check Terakhir</div>
+                        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                            <thead><tr style="background:#f8f9fa;"><th style="padding:8px; border:1px solid #E0E0E0;">Waktu</th><th style="padding:8px; border:1px solid #E0E0E0;">Status</th><th style="padding:8px; border:1px solid #E0E0E0;">Response Time</th></tr></thead>
+                            <tbody id="modalHistoryBody"><tr><td colspan="3" style="text-align:center; padding:10px;">Memuat data...</td></tr></tbody>
+                        </table>
+                    </div>
+                `;
+
+                loadModalCharts(domain);
+                cekSSL(domain);
+
+            } catch(err) {
+                body.innerHTML = '<div class="empty-state">Gagal memuat data. Pastikan backend berjalan.</div>';
+            }
+        }
+
+        async function cekSSL(domain) {
+            try {
+                const res = await fetch('/ssl?domain=' + domain);
+                const data = await res.json();
+                const el = document.getElementById('sslStatus');
+                if (!el) return;
+                
+                if (data.valid) {
+                    el.textContent = data.days_remaining + ' hari';
+                    el.style.color = data.days_remaining > 30 ? '#2E7D32' : '#D4AF37';
+                    el.title = 'Expired: ' + data.expires_at;
+                } else {
+                    el.textContent = 'Tidak Ada';
+                    el.style.color = '#C62828';
+                }
+            } catch(e) {
+                const el = document.getElementById('sslStatus');
+                if (el) { 
+                    el.textContent = 'Unknown'; 
+                    el.style.color = '#888';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('statsOverlay').addEventListener('click', function(e) {
+                if (e.target === this) tutupStatistik();
+            });
+            render();
+            checkAll();
+            setInterval(checkAll, 300000);
+            
+            document.getElementById('domainSearch').addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                if (subfinderResults.length > 0) {
+                    renderSubdomainResults();
+                }
+            });
+            document.getElementById('domainSearch').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const btn = document.querySelector('.scan-btn');
+                    if (btn && btn.disabled) return;
+                    scanSubdomains();
+                }
+            });
+        });
+    </script>
+    <div id="statsOverlay" style="
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+      overflow-y: auto;">
+      
+      <div id="statsPanel" style="
+        background: white;
+        width: 90%;
+        max-width: 800px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0 auto 40px auto;">
+        
+        <div id="statsPanelHeader" style="
+          background: #1A4480;
+          color: white;
+          padding: 15px 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-left: 4px solid #D4AF37;">
+          <div>
+            <div style="font-size:12px; opacity:0.8;">
+              Statistik Domain
+            </div>
+            <div id="statsDomain" style="
+              font-size:16px; font-weight:600; margin-top:2px;">
+            </div>
+          </div>
+          <button onclick="tutupStatistik()" style="
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;">
+            ✕ Tutup
+          </button>
+        </div>
+
+        <div id="statsPanelBody" style="padding: 20px;">
+          <div class="empty-state">Memuat...</div>
+        </div>
+      </div>
+    </div>
+</body>
+</html>

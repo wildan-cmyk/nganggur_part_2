@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistik Subdomain - Monitor Status Website</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="top-strip">
+        <span>Pemerintah Kabupaten Lamongan</span>
+        <span>lamongankab.go.id</span>
+    </div>
+    
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="logo-pemkab-lamongan-116x166.png" alt="" class="logo" onerror="this.style.display='none'">
+            <div class="header-title" id="pageTitle">Detail Statistik Subdomain</div>
+        </div>
+        <a href="/" class="back-btn">← Kembali</a>
+    </div>
+
+    <div class="container" style="display: block;">
+        <!-- INFO CARDS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Status Sekarang</div>
+                <div class="stat-value" id="currentStatus">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Response Time Terakhir</div>
+                <div class="stat-value" id="lastResponseTime">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Uptime %</div>
+                <div class="stat-value" id="uptimePercent">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">SSL Status</div>
+                <div class="stat-value" id="sslStatus">-</div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="charts-container">
+            <div class="chart-box">
+                <div class="chart-title">Response Time (24 Jam Terakhir)</div>
+                <canvas id="responseTimeChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <div class="chart-title">Uptime % per Hari (7 Hari Terakhir)</div>
+                <canvas id="uptimeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- HISTORY TABLE -->
+        <div class="section">
+            <div class="section-header">
+                <span>Riwayat 20 Check Terakhir</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Status</th>
+                            <th>Response Time</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #888;">Memuat data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bottom" style="margin-top: 40px;">
+        <div>Pemerintah Kabupaten Lamongan</div>
+        <div>© 2025 Monitor Status Website</div>
+    </div>
+
+    <script>
+        const domain = new URLSearchParams(window.location.search).get('domain') || 'lamongankab.go.id';
+        document.getElementById('pageTitle').textContent = `Statistik: ${domain}`;
+
+        async function loadAllData() {
+            // 1. Current Status & Ping Check
+            try {
+                const res = await fetch('/check', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ url: `https://${domain}` })
+                });
+                const data = await res.json();
+                const statusEl = document.getElementById('currentStatus');
+                if (data.status === 'UP') {
+                    statusEl.textContent = 'UP';
+                    statusEl.style.color = '#2E7D32';
+                    document.getElementById('lastResponseTime').textContent = `${data.response_time} ms`;
+                } else {
+                    statusEl.textContent = 'DOWN';
+                    statusEl.style.color = '#C62828';
+                    document.getElementById('lastResponseTime').textContent = '-';
+                }
+            } catch (err) {
+                document.getElementById('currentStatus').textContent = 'ERR';
+            }
+
+            // 2. SSL Status
+            try {
+                const res = await fetch(`/ssl?domain=${domain}`);
+                const data = await res.json();
+                const sslEl = document.getElementById('sslStatus');
+                if (data.valid) {
+                    sslEl.textContent = `Valid (${data.days_remaining} hari)`;
+                    sslEl.style.color = '#2E7D32';
+                } else {
+                    sslEl.textContent = data.error || 'Expired / Invalid';
+                    sslEl.style.color = '#C62828';
+                }
+            } catch (err) {
+                document.getElementById('sslStatus').textContent = 'Unknown';
+            }
+
+            // 3. History Data (for Chart 1 & Table)
+            try {
+                const res = await fetch(`/history?domain=${domain}`);
+                const history = await res.json();
+                
+                // Render Table (last 20)
+                const tbody = document.getElementById('historyTableBody');
+                const last20 = [...history].reverse().slice(0, 20);
+                if (last20.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Belum ada data riwayat</td></tr>';
+                } else {
+                    tbody.innerHTML = last20.map(item => `
+                        <tr class="${item.status === 'UP' ? 'row-up' : 'row-down'}">
+                            <td>${new Date(item.checked_at).toLocaleString('id-ID')}</td>
+                            <td><strong style="color: ${item.status === 'UP' ? '#2E7D32' : '#C62828'}">${item.status}</strong></td>
+                            <td>${item.response_time ? item.response_time + ' ms' : '-'}</td>
+                            <td>${item.status === 'UP' ? 'Server Berjalan Normal' : 'Server Bermasalah'}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Render Chart 1: Line Chart
+                const labels = history.map(h => {
+                    const d = new Date(h.checked_at);
+                    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                });
+                const responseTimes = history.map(h => h.response_time || 0);
+
+                new Chart(document.getElementById('responseTimeChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Response Time (ms)',
+                            data: responseTimes,
+                            borderColor: '#1A4480',
+                            backgroundColor: 'rgba(26, 68, 128, 0.1)',
+                            fill: true,
+                            tension: 0.2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+
+            } catch (err) {
+                console.error(err);
+            }
+
+            // 4. Uptime Data (for Chart 2 & Card Uptime)
+            try {
+                const res = await fetch(`/uptime?domain=${domain}`);
+                const uptimeData = await res.json();
+
+                if (uptimeData.length > 0) {
+                    // Average uptime for card
+                    const avgUptime = (uptimeData.reduce((acc, curr) => acc + curr.uptime_percent, 0) / uptimeData.length).toFixed(1);
+                    document.getElementById('uptimePercent').textContent = `${avgUptime}%`;
+
+                    // Chart 2 Colors
+                    const backgroundColors = uptimeData.map(d => {
+                        if (d.uptime_percent > 80) return '#2E7D32'; // Green
+                        if (d.uptime_percent >= 50) return '#D4AF37'; // Yellow
+                        return '#C62828'; // Red
+                    });
+
+                    new Chart(document.getElementById('uptimeChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: uptimeData.map(d => d.date),
+                            datasets: [{
+                                label: 'Uptime %',
+                                data: uptimeData.map(d => d.uptime_percent),
+                                backgroundColor: backgroundColors,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: { min: 0, max: 100 }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAllData);
+    </script>
+</body>
+</html>
