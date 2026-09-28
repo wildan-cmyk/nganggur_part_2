@@ -30,7 +30,7 @@ MONITORED_DOMAINS = [
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()  
+    cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS check_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,14 +47,13 @@ def auto_check_domain(domain):
     url = f"https://{domain}"
     try:
         start_time = time.time()
-        response = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=10)
         end_time = time.time()
         response_time_ms = round((end_time - start_time) * 1000)
         status = 'UP'
     except:
         response_time_ms = None
         status = 'DOWN'
-    
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -71,16 +70,11 @@ def auto_check_all():
     print(f"[Scheduler] Mulai cek otomatis: {datetime.now().strftime('%H:%M:%S')}")
     threads = []
     for domain in MONITORED_DOMAINS:
-        t = threading.Thread(
-            target=auto_check_domain, 
-            args=(domain,)
-        )
+        t = threading.Thread(target=auto_check_domain, args=(domain,))
         threads.append(t)
         t.start()
-    
     for t in threads:
         t.join()
-    
     print(f"[Scheduler] Selesai cek {len(MONITORED_DOMAINS)} domain")
 
 init_db()
@@ -118,54 +112,37 @@ def stats():
 def check():
     data = request.get_json()
     url = data.get('url')
-    
     if not url:
-        return jsonify({
-            'status': 'down',
-            'status_code': None,
-            'response_time_ms': None,
-            'error': 'URL is required'
-        }), 400
-    
-    # Extract domain from url for DB logging
-    # Handle url without protocol
+        return jsonify({'status': 'down', 'error': 'URL is required'}), 400
     if '://' not in url:
         domain = url.split('/')[0]
         url = 'https://' + url
     else:
         domain = url.replace('https://', '').replace('http://', '').split('/')[0]
-
-    status = 'DOWN'
     response_code = None
     response_time_ms = None
     error_msg = None
-
     try:
         start_time = time.time()
-        response = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=10)
         end_time = time.time()
-        
         response_time_ms = round((end_time - start_time) * 1000)
-        status = 'UP'
-        response_code = response.status_code
-        
-        # Save to DB
+        response_code = resp.status_code
         try:
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
-            c.execute("INSERT INTO check_history (domain, status, response_time) VALUES (?, ?, ?)", (domain, status, response_time_ms))
+            c.execute("INSERT INTO check_history (domain, status, response_time) VALUES (?, ?, ?)",
+                      (domain, 'UP', response_time_ms))
             conn.commit()
             conn.close()
-        except Exception:
+        except:
             pass
-
         return jsonify({
             'status': 'UP',
             'url': url,
             'status_code': response_code,
             'response_time': response_time_ms
         })
-    
     except requests.exceptions.Timeout:
         error_msg = 'Request timeout after 10 seconds'
     except requests.exceptions.ConnectionError:
@@ -174,17 +151,15 @@ def check():
         error_msg = 'Invalid URL'
     except Exception as e:
         error_msg = str(e)
-
-    # Save to DB for DOWN cases
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        c.execute("INSERT INTO check_history (domain, status, response_time) VALUES (?, ?, ?)", (domain, 'DOWN', None))
+        c.execute("INSERT INTO check_history (domain, status, response_time) VALUES (?, ?, ?)",
+                  (domain, 'DOWN', None))
         conn.commit()
         conn.close()
-    except Exception:
+    except:
         pass
-
     return jsonify({
         'status': 'DOWN',
         'url': url,
@@ -198,7 +173,6 @@ def history():
     domain = request.args.get('domain')
     if not domain:
         return jsonify({'error': 'Domain required'}), 400
-    
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -206,9 +180,8 @@ def history():
         c.execute("SELECT checked_at, status, response_time FROM check_history WHERE domain = ? ORDER BY id DESC LIMIT 48", (domain,))
         rows = c.fetchall()
         conn.close()
-
         result = [dict(row) for row in rows]
-        result.reverse() # Oldest to newest for charts
+        result.reverse()
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -218,29 +191,20 @@ def uptime():
     domain = request.args.get('domain')
     if not domain:
         return jsonify({'error': 'Domain required'}), 400
-    
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        
-        # Get data for the last 7 days
         results = []
         for i in range(6, -1, -1):
             day = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
             c.execute("SELECT status FROM check_history WHERE domain = ? AND date(checked_at) = ?", (domain, day))
             rows = c.fetchall()
-            
             total_checks = len(rows)
             up_checks = sum(1 for r in rows if r[0] == 'UP')
-            
             uptime_percent = round((up_checks / total_checks * 100), 2) if total_checks > 0 else 0
-            results.append({
-                'date': day,
-                'uptime_percent': uptime_percent,
-                'total_checks': total_checks
-            })
-            
+            results.append({'date': day, 'uptime_percent': uptime_percent, 'total_checks': total_checks})
         conn.close()
+        results = [r for r in results if r['total_checks'] > 0]
         return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -252,20 +216,14 @@ def check_ssl():
         return jsonify({'valid': False, 'error': 'Domain required'})
     try:
         ctx = ssl.create_default_context()
-        with ctx.wrap_socket(
-            socket.socket(), server_hostname=domain
-        ) as s:
+        with ctx.wrap_socket(socket.socket(), server_hostname=domain) as s:
             s.settimeout(5)
             s.connect((domain, 443))
             cert = s.getpeercert()
-
         expires_str = cert['notAfter']
-        expires_at = datetime.strptime(
-            expires_str, '%b %d %H:%M:%S %Y %Z'
-        )
+        expires_at = datetime.strptime(expires_str, '%b %d %H:%M:%S %Y %Z')
         days_remaining = (expires_at - datetime.utcnow()).days
         issuer = dict(x[0] for x in cert.get('issuer', []))
-        
         return jsonify({
             'valid': True,
             'expires_at': expires_at.strftime('%d %B %Y'),
@@ -281,21 +239,15 @@ def discover():
     domain = data.get('domain', 'lamongankab.go.id')
     parts = domain.split('.')
     is_specific = len(parts) > 3
-
     if is_specific:
-        return jsonify({
-            "subdomains": [domain],
-            "total": 1,
-            "mode": "specific"
-        })
-    
+        return jsonify({"subdomains": [domain], "total": 1, "mode": "specific"})
     try:
-        response = requests.get(
+        resp = requests.get(
             f'https://crt.sh/?q=%.{domain}&output=json',
             timeout=15
         )
-        if response.status_code == 200:
-            cert_data = response.json()
+        if resp.status_code == 200:
+            cert_data = resp.json()
             if isinstance(cert_data, list):
                 crtsh_subdomains = set()
                 for entry in cert_data:
@@ -304,8 +256,7 @@ def discover():
                         sub = sub.strip().lstrip('*.')
                         if domain in sub and sub:
                             crtsh_subdomains.add(sub)
-                
-                subdomains = sorted([s for s in crtsh_subdomains 
+                subdomains = sorted([s for s in crtsh_subdomains
                                      if s.endswith('.' + domain) or s == domain])
                 if subdomains:
                     return jsonify({
@@ -315,7 +266,6 @@ def discover():
                     })
     except Exception as e:
         print(f"[crt.sh] Error: {e}")
-
     return jsonify({
         'subdomains': [],
         'total': 0,
