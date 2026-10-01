@@ -204,7 +204,6 @@ def uptime():
             uptime_percent = round((up_checks / total_checks * 100), 2) if total_checks > 0 else 0
             results.append({'date': day, 'uptime_percent': uptime_percent, 'total_checks': total_checks})
         conn.close()
-        results = [r for r in results if r['total_checks'] > 0]
         return jsonify(results)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

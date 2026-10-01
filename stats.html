@@ -185,7 +185,7 @@
                 const res = await fetch(`/uptime?domain=${domain}`);
                 const uptimeData = await res.json();
 
-                if (uptimeData.length > 0) {
+                if (uptimeData && uptimeData.length > 0) {
                     // Average uptime for card
                     const avgUptime = (uptimeData.reduce((acc, curr) => acc + curr.uptime_percent, 0) / uptimeData.length).toFixed(1);
                     document.getElementById('uptimePercent').textContent = `${avgUptime}%`;
@@ -210,8 +210,18 @@
                         },
                         options: {
                             responsive: true,
+                            plugins: {
+                                legend: { display: false }
+                            },
                             scales: {
-                                y: { min: 0, max: 100 }
+                                y: { 
+                                    min: 0, 
+                                    max: 100,
+                                    ticks: { stepSize: 20 }
+                                },
+                                x: {
+                                    ticks: { maxRotation: 45 }
+                                }
                             }
                         }
                     });
